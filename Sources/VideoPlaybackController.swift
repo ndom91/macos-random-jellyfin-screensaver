@@ -19,7 +19,7 @@ final class VideoPlaybackController {
         hostView.addSubview(playerView, positioned: .below, relativeTo: nil)
     }
 
-    func play(url: URL, muted: Bool, statusHandler: ((String) -> Void)? = nil) {
+    func play(url: URL, muted: Bool, startTime: TimeInterval = 0, statusHandler: ((String) -> Void)? = nil) {
         stop()
         self.statusHandler = statusHandler
 
@@ -40,8 +40,21 @@ final class VideoPlaybackController {
         observe(player: player, item: playerItem)
         startDiagnostics(player: player, item: playerItem)
 
-        player.playImmediately(atRate: 1.0)
-        statusHandler?("Playback requested")
+        let startPlayback = { [weak player, statusHandler] in
+            player?.playImmediately(atRate: 1.0)
+            statusHandler?("Playback requested")
+        }
+
+        if startTime > 0 {
+            let seekTime = CMTime(seconds: startTime, preferredTimescale: 600)
+            player.seek(to: seekTime, toleranceBefore: .zero, toleranceAfter: .zero) { _ in
+                Task { @MainActor in
+                    startPlayback()
+                }
+            }
+        } else {
+            startPlayback()
+        }
     }
 
     func layout() {

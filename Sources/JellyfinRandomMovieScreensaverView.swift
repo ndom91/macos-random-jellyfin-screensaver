@@ -10,6 +10,7 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
     private var settingsWindowController: SettingsWindowController?
     private var playbackTask: Task<Void, Never>?
     private var playbackRequestID: UUID?
+    private var hideTitleTask: Task<Void, Never>?
     private let statusLabel = NSTextField(labelWithString: "")
     private var windowWillCloseObserver: NSObjectProtocol?
 
@@ -151,11 +152,11 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                     }
 
                     let itemName = item.name ?? item.id
-                    self?.hideStatus()
+                    self?.showTemporaryTitle(itemName)
                     NSLog("JellyfinRandomMovieScreensaver: starting \(itemName)")
                     NSLog("JellyfinRandomMovieScreensaver: selected item container: \(item.container ?? "unknown")")
                     NSLog("JellyfinRandomMovieScreensaver: playback URL: \(playbackURL.absoluteString)")
-                    self?.playbackController?.play(url: playbackURL, muted: settings.muted) { [weak self] status in
+                    self?.playbackController?.play(url: playbackURL, muted: settings.muted, startTime: 120) { [weak self] status in
                         self?.handlePlaybackStatus(status, itemName: itemName)
                     }
                 }
@@ -175,6 +176,9 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
         playbackTask?.cancel()
         playbackTask = nil
         playbackController?.stop()
+        hideTitleTask?.cancel()
+        hideTitleTask = nil
+        hideStatus()
     }
 
     private func registerLifecycleObservers() {
@@ -212,10 +216,10 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
 
     private func configureStatusLabel() {
         statusLabel.textColor = .white
-        statusLabel.font = NSFont.systemFont(ofSize: 18, weight: .medium)
-        statusLabel.alignment = .center
+        statusLabel.font = NSFont.systemFont(ofSize: 44, weight: .semibold)
+        statusLabel.alignment = .left
         statusLabel.lineBreakMode = .byWordWrapping
-        statusLabel.maximumNumberOfLines = 3
+        statusLabel.maximumNumberOfLines = 2
         statusLabel.backgroundColor = .clear
         statusLabel.wantsLayer = true
         statusLabel.layer?.zPosition = 10
@@ -225,12 +229,15 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
     }
 
     private func layoutStatusLabel() {
-        let width = min(bounds.width - 80, 760)
+        let horizontalPadding: CGFloat = 72
+        let bottomPadding: CGFloat = 72
+        let width = min(bounds.width - (horizontalPadding * 2), 980)
+        let height: CGFloat = 130
         statusLabel.frame = NSRect(
-            x: (bounds.width - width) / 2,
-            y: (bounds.height - 90) / 2,
+            x: horizontalPadding,
+            y: bottomPadding,
             width: width,
-            height: 90
+            height: height
         )
     }
 
@@ -244,6 +251,22 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
         statusLabel.isHidden = true
     }
 
+    private func showTemporaryTitle(_ title: String) {
+        hideTitleTask?.cancel()
+        showStatus(title)
+
+        hideTitleTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(10))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                self?.hideStatus()
+            }
+        }
+    }
+
     private func logAndShowStatus(_ message: String) {
         NSLog("JellyfinRandomMovieScreensaver: \(message)")
         showStatus(message)
@@ -253,20 +276,25 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
         NSLog("JellyfinRandomMovieScreensaver: \(itemName): \(status)")
 
         if status == "Player playing" || status == "Video ready to play" {
-            hideStatus()
+            return
+        }
+
+        if status == "Playback requested" || status == "Video item status unknown" {
+            return
+        }
+
+        if status.hasPrefix("Player waiting:") || status == "Player paused after playback request" {
             return
         }
 
         if status.hasPrefix("Diagnostics:") {
             if status.contains("player=playing") && status.contains("error=none") {
-                hideStatus()
+                return
+            } else if status.contains("player=waiting") && status.contains("error=none") {
+                return
             } else {
                 showStatus("\(itemName): \(status)")
             }
-            return
-        }
-
-        if status == "Playback requested" || status == "Video item status unknown" {
             return
         }
 

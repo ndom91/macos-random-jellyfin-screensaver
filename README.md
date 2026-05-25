@@ -1,157 +1,77 @@
 # Jellyfin Random Media Screensaver
 
-A native macOS screensaver that plays a random unwatched Jellyfin media item when the screensaver starts.
+A native macOS screensaver that plays a random unwatched Jellyfin movie or TV episode.
 
-The first version is planned as a Swift-only `.saver` bundle using `ScreenSaver.framework`, `URLSession`, and `AVPlayerLayer`.
+It fetches random unwatched items from your Jellyfin server, skips the first two minutes to avoid studio intros, briefly shows the selected title, and plays the video inside the macOS screensaver.
 
-## Status
+## Features
 
-This project is in early planning/implementation.
+- Native macOS `.saver` bundle.
+- Plays random unwatched Jellyfin media.
+- Supports movies and TV episodes.
+- Muted by default, with an option to enable audio.
+- Starts playback at the 2-minute mark.
+- Shows the selected title for the first 10 seconds.
+- Native Screen Saver Options sheet for configuration.
+- No Electron, Node, TypeScript, or external video player runtime.
 
-See:
+## Requirements
 
-- `docs/2025-05-25-initial-plan.md`
-- `docs/2026-05-25-implementation-plan.md`
+- macOS with Screen Saver support.
+- Jellyfin server reachable from the Mac.
+- Jellyfin API key.
+- Jellyfin user ID.
+- Swift toolchain / Xcode Command Line Tools for building from source.
 
-## Planned Settings
+## Configuration
 
-The screensaver will include a native macOS Screen Saver Options sheet with:
+After installing, open macOS Screen Saver Settings, select **Jellyfin Random Media Screensaver**, and open **Options...**.
 
-- Jellyfin base URL
-- Jellyfin API key
-- Jellyfin user ID from `/Users/{userId}/Items`, not a media item ID
-- Media type: movies or TV episodes
-- Play muted toggle
+Settings:
 
-## Development Setup
+- **Jellyfin Base URL**: your Jellyfin server URL, for example `https://watch.example.com`.
+- **Jellyfin API Key**: a Jellyfin API key.
+- **Jellyfin User ID**: the ID from Jellyfin API paths like `/Users/{userId}/Items`; this is not a media item ID.
+- **Media Type**: movies or TV episodes.
+- **Play muted**: enabled by default.
 
-Install Xcode from the Mac App Store or Apple Developer downloads, then install the command-line tools:
+## Build And Install
+
+Install Xcode Command Line Tools if needed:
 
 ```sh
 xcode-select --install
 ```
 
-Accept the Xcode license if needed:
-
-```sh
-sudo xcodebuild -license accept
-```
-
-Xcode is useful for project/target configuration and macOS framework integration, but this repo also includes a `Makefile` that can build the `.saver` bundle directly with `swiftc`.
-
-A typical Neovim workflow is:
-
-```text
-edit Swift files in nvim
-build with make
-install the .saver bundle locally
-test through macOS Screen Saver Settings
-```
-
-Useful editor tooling:
-
-- `sourcekit-lsp` for Swift language server support
-- `swift-format` for formatting, if added to the project later
-- `xcodebuild` for command-line builds
-- `make` for the current CLI build/install workflow
-
-## Building With Make
-
-Build the screensaver bundle:
-
-```sh
-make build
-```
-
-Print the built bundle path:
-
-```sh
-make print-bundle
-```
-
-Install the screensaver for the current user:
+Build and install for the current user:
 
 ```sh
 make install
 ```
 
-Clean build output:
+The screensaver is installed to:
 
-```sh
-make clean
+```text
+~/Library/Screen Savers/JellyfinRandomMovieScreensaver.saver
 ```
 
-The local build output is:
+The build output is:
 
 ```text
 build/Debug/JellyfinRandomMovieScreensaver.saver
 ```
 
-The build performs local ad-hoc code signing with:
+Other useful commands:
 
 ```sh
-codesign --force --sign - --timestamp=none build/Debug/JellyfinRandomMovieScreensaver.saver
+make build
+make print-bundle
+make clean
 ```
 
-This is required on modern macOS so the screensaver bundle can be loaded locally by the system screensaver process.
+The build ad-hoc signs the local `.saver` bundle with `codesign --sign -`. This is required on modern macOS so the system screensaver host can load the bundle locally.
 
-## Building Without Opening Xcode
-
-The current project can be built with `make` as described above. If an Xcode project is added later, the equivalent command-line workflow will look like this.
-
-List available schemes:
-
-```sh
-xcodebuild -list -project JellyfinRandomMovieScreensaver.xcodeproj
-```
-
-Build the screensaver:
-
-```sh
-xcodebuild \
-  -project JellyfinRandomMovieScreensaver.xcodeproj \
-  -scheme JellyfinRandomMovieScreensaver \
-  -configuration Debug \
-  build
-```
-
-Clean the build:
-
-```sh
-xcodebuild \
-  -project JellyfinRandomMovieScreensaver.xcodeproj \
-  -scheme JellyfinRandomMovieScreensaver \
-  clean
-```
-
-The built `.saver` bundle will be under Xcode's derived data build output. The exact path can vary by machine and Xcode settings.
-
-To find the build directory, run:
-
-```sh
-xcodebuild \
-  -project JellyfinRandomMovieScreensaver.xcodeproj \
-  -scheme JellyfinRandomMovieScreensaver \
-  -configuration Debug \
-  -showBuildSettings
-```
-
-Look for `BUILT_PRODUCTS_DIR`.
-
-## Local Installation
-
-Install the built screensaver into your user-local Screen Savers folder:
-
-```sh
-mkdir -p "$HOME/Library/Screen Savers"
-cp -R path/to/JellyfinRandomMovieScreensaver.saver "$HOME/Library/Screen Savers/"
-```
-
-Then open macOS Screen Saver Settings and select `JellyfinRandomMovieScreensaver`.
-
-For local development, a paid Apple Developer account and notarization should not be required.
-
-## Local Testing
+## Testing
 
 Launch the currently selected screensaver immediately:
 
@@ -159,24 +79,82 @@ Launch the currently selected screensaver immediately:
 open -a ScreenSaverEngine
 ```
 
-View recent screensaver logs:
+View recent project logs:
 
 ```sh
 command log show --last 2m --style compact --predicate 'eventMessage CONTAINS "JellyfinRandomMovieScreensaver"'
 ```
 
-Modern macOS may show Wallpaper settings labels while custom `.saver` modules are launched through the legacy screensaver host. If the logs mention `Setting module “JellyfinRandomMovieScreensaver”`, the custom module is being loaded.
+If audio keeps playing after exiting during development, kill the legacy screensaver host:
 
-## Distribution Notes
+```sh
+killall legacyScreenSaver ScreenSaverEngine
+```
 
-For personal local builds, unsigned or ad-hoc signed builds are usually enough.
+## Development
 
-For public distribution, expect to use:
+The project is intentionally small and can be developed without opening Xcode.
 
-- Apple Developer Program membership
-- Developer ID Application certificate
-- code signing
-- notarization
-- stapling
+Typical workflow:
+
+```text
+edit Swift files
+make build
+make install
+open -a ScreenSaverEngine
+```
+
+Source layout:
+
+```text
+Resources/Info.plist
+Sources/JellyfinRandomMovieScreensaverView.swift
+Sources/ScreensaverSettings.swift
+Sources/SettingsWindowController.swift
+Sources/JellyfinClient.swift
+Sources/JellyfinModels.swift
+Sources/PlaybackURLBuilder.swift
+Sources/VideoPlaybackController.swift
+```
+
+The implementation uses:
+
+- `ScreenSaver.framework` for the `.saver` lifecycle.
+- `AppKit` for the configuration sheet and title overlay.
+- `URLSession` for Jellyfin API requests.
+- `AVFoundation` / `AVPlayerLayer` for playback.
+
+## Troubleshooting
+
+If the screensaver is black, check logs:
+
+```sh
+command log show --last 5m --style compact --predicate 'eventMessage CONTAINS "JellyfinRandomMovieScreensaver" OR eventMessage CONTAINS "AMFI"'
+```
+
+Common issues:
+
+- **Missing settings**: fill in base URL, API key, and user ID in Options.
+- **404 from Jellyfin**: the user ID may be wrong. Use the ID from `/Users/{userId}/Items`.
+- **AMFI or Gatekeeper errors**: rebuild and reinstall so the bundle is ad-hoc signed.
+- **Unsupported media**: AVPlayer works best with MP4/MOV-compatible media. The screensaver prefers compatible items and requests Jellyfin's MP4 stream endpoint.
+
+Modern macOS may show Wallpaper settings labels while custom `.saver` modules are launched through the legacy screensaver host. If logs mention `Setting module “JellyfinRandomMovieScreensaver”`, the custom module is being loaded.
+
+## Distribution
+
+Local builds do not require a paid Apple Developer account or notarization.
+
+Public distribution should use:
+
+- Apple Developer Program membership.
+- Developer ID Application certificate.
+- Code signing.
+- Notarization.
+- Stapling.
 
 Unsigned or unnotarized shared builds may trigger Gatekeeper warnings or require manual security overrides.
+
+## Project Notes
+
+Planning documents are kept in `docs/` for future reference.
