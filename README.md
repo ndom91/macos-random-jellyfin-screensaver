@@ -151,6 +151,22 @@ Then open macOS Screen Saver Settings and select `JellyfinRandomMovieScreensaver
 
 For local development, a paid Apple Developer account and notarization should not be required.
 
+## Local Testing
+
+Launch the currently selected screensaver immediately:
+
+```sh
+open -a ScreenSaverEngine
+```
+
+View recent screensaver logs:
+
+```sh
+command log show --last 2m --style compact --predicate 'eventMessage CONTAINS "JellyfinRandomMovieScreensaver"'
+```
+
+Modern macOS may show Wallpaper settings labels while custom `.saver` modules are launched through the legacy screensaver host. If the logs mention `Setting module “JellyfinRandomMovieScreensaver”`, the custom module is being loaded.
+
 ## Distribution Notes
 
 For personal local builds, unsigned or ad-hoc signed builds are usually enough.

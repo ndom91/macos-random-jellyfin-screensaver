@@ -51,13 +51,15 @@ final class VideoPlaybackController {
     func stop() {
         diagnosticsTask?.cancel()
         diagnosticsTask = nil
+        statusHandler = nil
         observations.removeAll()
+        player?.rate = 0
         player?.pause()
+        player?.replaceCurrentItem(with: nil)
         player = nil
         playerItem = nil
         playerLayer?.removeFromSuperlayer()
         playerLayer = nil
-        statusHandler = nil
     }
 
     private func observe(player: AVPlayer, item: AVPlayerItem) {

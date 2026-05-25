@@ -2,6 +2,7 @@ import AppKit
 import ScreenSaver
 
 @objc(JellyfinRandomMovieScreensaverView)
+@MainActor
 final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
     private let jellyfinClient = JellyfinClient()
     private let playbackURLBuilder = PlaybackURLBuilder()
@@ -40,12 +41,14 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
 
     override func stopAnimation() {
         super.stopAnimation()
-        playbackRequestID = nil
-        playbackTask?.cancel()
-        playbackTask = nil
+        stopPlayback()
+    }
 
-        Task { @MainActor in
-            playbackController?.stop()
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+
+        if window == nil {
+            stopPlayback()
         }
     }
 
@@ -104,11 +107,11 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                     }
 
                     let itemName = item.name ?? item.id
-                    self?.logAndShowStatus("Playing \(itemName)")
+                    self?.logAndShowStatus("Starting \(itemName)")
                     NSLog("JellyfinRandomMovieScreensaver: selected item container: \(item.container ?? "unknown")")
                     NSLog("JellyfinRandomMovieScreensaver: playback URL: \(playbackURL.absoluteString)")
                     self?.playbackController?.play(url: playbackURL, muted: settings.muted) { [weak self] status in
-                        self?.logAndShowStatus("\(itemName): \(status)")
+                        self?.handlePlaybackStatus(status, itemName: itemName)
                     }
                 }
             } catch is CancellationError {
@@ -119,6 +122,13 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                 }
             }
         }
+    }
+
+    private func stopPlayback() {
+        playbackRequestID = nil
+        playbackTask?.cancel()
+        playbackTask = nil
+        playbackController?.stop()
     }
 
     private func configureStatusLabel() {
@@ -151,8 +161,36 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
         layoutStatusLabel()
     }
 
+    private func hideStatus() {
+        statusLabel.isHidden = true
+    }
+
     private func logAndShowStatus(_ message: String) {
         NSLog("JellyfinRandomMovieScreensaver: \(message)")
         showStatus(message)
+    }
+
+    private func handlePlaybackStatus(_ status: String, itemName: String) {
+        NSLog("JellyfinRandomMovieScreensaver: \(itemName): \(status)")
+
+        if status == "Player playing" || status == "Video ready to play" {
+            hideStatus()
+            return
+        }
+
+        if status.hasPrefix("Diagnostics:") {
+            if status.contains("player=playing") && status.contains("error=none") {
+                hideStatus()
+            } else {
+                showStatus("\(itemName): \(status)")
+            }
+            return
+        }
+
+        if status == "Playback requested" || status == "Video item status unknown" {
+            return
+        }
+
+        showStatus("\(itemName): \(status)")
     }
 }
