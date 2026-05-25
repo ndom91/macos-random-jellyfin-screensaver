@@ -83,7 +83,8 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                 let items = try await jellyfinClient.fetchRandomItems(settings: settings)
                 try Task.checkCancellation()
 
-                guard let item = items.first(where: { $0.userData?.played == false }) else {
+                let unwatchedItems = items.filter { $0.userData?.played == false }
+                guard let item = unwatchedItems.first(where: { $0.isLikelyAVPlayerCompatible }) ?? unwatchedItems.first else {
                     await MainActor.run { [weak self] in
                         self?.logAndShowStatus("No unwatched Jellyfin items found.")
                     }
@@ -104,6 +105,7 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
 
                     let itemName = item.name ?? item.id
                     self?.logAndShowStatus("Playing \(itemName)")
+                    NSLog("JellyfinRandomMovieScreensaver: selected item container: \(item.container ?? "unknown")")
                     NSLog("JellyfinRandomMovieScreensaver: playback URL: \(playbackURL.absoluteString)")
                     self?.playbackController?.play(url: playbackURL, muted: settings.muted) { [weak self] status in
                         self?.logAndShowStatus("\(itemName): \(status)")
@@ -126,6 +128,8 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
         statusLabel.lineBreakMode = .byWordWrapping
         statusLabel.maximumNumberOfLines = 3
         statusLabel.backgroundColor = .clear
+        statusLabel.wantsLayer = true
+        statusLabel.layer?.zPosition = 10
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(statusLabel)
         layoutStatusLabel()

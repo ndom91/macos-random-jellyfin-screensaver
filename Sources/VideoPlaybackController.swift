@@ -3,52 +3,54 @@ import AVFoundation
 
 @MainActor
 final class VideoPlaybackController {
-    private weak var hostView: NSView?
+    private let playerView: NSView
     private var player: AVPlayer?
     private var playerItem: AVPlayerItem?
     private var playerLayer: AVPlayerLayer?
     private var observations: [NSKeyValueObservation] = []
     private var statusHandler: ((String) -> Void)?
+    private var diagnosticsTask: Task<Void, Never>?
 
     init(hostView: NSView) {
-        self.hostView = hostView
+        playerView = NSView(frame: hostView.bounds)
+        playerView.wantsLayer = true
+        playerView.layer?.backgroundColor = NSColor.black.cgColor
+        playerView.autoresizingMask = [.width, .height]
+        hostView.addSubview(playerView, positioned: .below, relativeTo: nil)
     }
 
     func play(url: URL, muted: Bool, statusHandler: ((String) -> Void)? = nil) {
         stop()
         self.statusHandler = statusHandler
 
-        guard let hostView else {
-            return
-        }
-
         let playerItem = AVPlayerItem(url: url)
         let player = AVPlayer(playerItem: playerItem)
         player.isMuted = muted
 
         let playerLayer = AVPlayerLayer(player: player)
-        playerLayer.frame = hostView.bounds
+        playerLayer.frame = playerView.bounds
         playerLayer.videoGravity = .resizeAspectFill
+        playerLayer.zPosition = 0
 
-        hostView.layer?.addSublayer(playerLayer)
+        playerView.layer?.addSublayer(playerLayer)
 
         self.player = player
         self.playerItem = playerItem
         self.playerLayer = playerLayer
         observe(player: player, item: playerItem)
+        startDiagnostics(player: player, item: playerItem)
 
-        player.play()
+        player.playImmediately(atRate: 1.0)
+        statusHandler?("Playback requested")
     }
 
     func layout() {
-        guard let hostView else {
-            return
-        }
-
-        playerLayer?.frame = hostView.bounds
+        playerLayer?.frame = playerView.bounds
     }
 
     func stop() {
+        diagnosticsTask?.cancel()
+        diagnosticsTask = nil
         observations.removeAll()
         player?.pause()
         player = nil
@@ -59,7 +61,7 @@ final class VideoPlaybackController {
     }
 
     private func observe(player: AVPlayer, item: AVPlayerItem) {
-        observations.append(item.observe(\.status, options: [.new]) { [weak self] item, _ in
+        observations.append(item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
             Task { @MainActor in
                 switch item.status {
                 case .readyToPlay:
@@ -78,7 +80,7 @@ final class VideoPlaybackController {
             Task { @MainActor in
                 switch player.timeControlStatus {
                 case .paused:
-                    self?.statusHandler?("Player paused")
+                    self?.statusHandler?("Player paused after playback request")
                 case .waitingToPlayAtSpecifiedRate:
                     self?.statusHandler?("Player waiting: \(player.reasonForWaitingToPlay?.rawValue ?? "unknown")")
                 case .playing:
@@ -88,5 +90,49 @@ final class VideoPlaybackController {
                 }
             }
         })
+    }
+
+    private func startDiagnostics(player: AVPlayer, item: AVPlayerItem) {
+        diagnosticsTask = Task { [weak self, weak player, weak item] in
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                guard let self, let player, let item else {
+                    return
+                }
+
+                let itemStatus: String
+                switch item.status {
+                case .unknown:
+                    itemStatus = "unknown"
+                case .readyToPlay:
+                    itemStatus = "ready"
+                case .failed:
+                    itemStatus = "failed"
+                @unknown default:
+                    itemStatus = "other"
+                }
+
+                let playerStatus: String
+                switch player.timeControlStatus {
+                case .paused:
+                    playerStatus = "paused"
+                case .waitingToPlayAtSpecifiedRate:
+                    playerStatus = "waiting(\(player.reasonForWaitingToPlay?.rawValue ?? "unknown"))"
+                case .playing:
+                    playerStatus = "playing"
+                @unknown default:
+                    playerStatus = "other"
+                }
+
+                let time = CMTimeGetSeconds(player.currentTime())
+                let size = item.presentationSize
+
+                self.statusHandler?("Diagnostics: item=\(itemStatus), player=\(playerStatus), rate=\(player.rate), time=\(String(format: "%.1f", time)), size=\(Int(size.width))x\(Int(size.height)), error=\(item.error?.localizedDescription ?? "none")")
+            }
+        }
     }
 }
