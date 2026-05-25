@@ -274,27 +274,30 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
 
     private func handlePlaybackStatus(_ status: String, itemName: String) {
         NSLog("JellyfinRandomMovieScreensaver: \(itemName): \(status)")
+        let normalizedStatus = status.lowercased()
 
-        if status == "Player playing" || status == "Video ready to play" {
+        if normalizedStatus == "player playing" || normalizedStatus == "video ready to play" {
             return
         }
 
-        if status == "Playback requested" || status == "Video item status unknown" {
+        if normalizedStatus == "playback requested" || normalizedStatus == "video item status unknown" {
             return
         }
 
-        if status.hasPrefix("Player waiting:") || status == "Player paused after playback request" {
+        if normalizedStatus.hasPrefix("player waiting:") || normalizedStatus == "player paused after playback request" {
             return
         }
 
-        if status.hasPrefix("Diagnostics:") {
-            if status.contains("player=playing") && status.contains("error=none") {
+        if normalizedStatus.hasPrefix("diagnostics:") {
+            if normalizedStatus.contains("error=none") {
                 return
-            } else if status.contains("player=waiting") && status.contains("error=none") {
-                return
-            } else {
-                showStatus("\(itemName): \(status)")
             }
+
+            showStatus("\(itemName): \(status)")
+            return
+        }
+
+        if !normalizedStatus.contains("failed") && !normalizedStatus.contains("error") && !normalizedStatus.contains("cannot") {
             return
         }
 
