@@ -108,7 +108,7 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
         playbackController = VideoPlaybackController(hostView: self)
         configureStatusLabel()
         registerLifecycleObservers()
-        showStatus("Jellyfin screensaver loaded")
+        hideStatus()
     }
 
     private func startPlayback() {
@@ -122,7 +122,7 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
 
         let requestID = UUID()
         playbackRequestID = requestID
-        logAndShowStatus("Fetching random \(settings.mediaType.displayName.lowercased()) from Jellyfin...")
+        NSLog("JellyfinRandomMovieScreensaver: fetching random \(settings.mediaType.displayName.lowercased()) from Jellyfin")
         NSLog("JellyfinRandomMovieScreensaver: random items URL: \(jellyfinClient.redactedRandomItemsURL(settings: settings))")
 
         playbackTask = Task { [jellyfinClient, playbackURLBuilder] in
@@ -151,7 +151,8 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                     }
 
                     let itemName = item.name ?? item.id
-                    self?.logAndShowStatus("Starting \(itemName)")
+                    self?.hideStatus()
+                    NSLog("JellyfinRandomMovieScreensaver: starting \(itemName)")
                     NSLog("JellyfinRandomMovieScreensaver: selected item container: \(item.container ?? "unknown")")
                     NSLog("JellyfinRandomMovieScreensaver: playback URL: \(playbackURL.absoluteString)")
                     self?.playbackController?.play(url: playbackURL, muted: settings.muted) { [weak self] status in
