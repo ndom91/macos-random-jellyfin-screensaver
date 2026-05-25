@@ -12,12 +12,12 @@ It fetches random unwatched items from your Jellyfin server, skips the first two
 - Muted by default, with an option to enable audio.
 - Starts playback at the 2-minute mark.
 
-## Requirements
+## Install
 
-- Jellyfin server reachable from the Mac.
-- Jellyfin API key.
-- Jellyfin user ID.
-- Swift toolchain / Xcode Command Line Tools for building from source.
+1. Download the latest `.zip` from GitHub Releases.
+2. Unzip it.
+3. Copy `JellyfinRandomMovieScreensaver.saver` to `~/Library/Screen Savers/`.
+4. Open macOS Screen Saver Settings, select **Jellyfin Random Media Screensaver**, and fill in **Options...**.
 
 ## Configuration
 
