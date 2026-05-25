@@ -33,7 +33,14 @@ Settings:
 
 ## Build And Install
 
-Install Xcode Command Line Tools if needed:
+Prebuilt `.saver` bundles are available from GitHub Releases. Download the latest `.zip`, unzip it, and install `JellyfinRandomMovieScreensaver.saver` into:
+
+```text
+~/Library/Screen Savers/
+```
+
+To build from source, install Xcode Command Line Tools if needed:
+
 
 ```sh
 xcode-select --install
