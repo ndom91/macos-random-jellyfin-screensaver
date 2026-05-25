@@ -32,9 +32,10 @@ JellyfinRandomMovieScreensaver.saver
 ## Proposed Source Layout
 
 ```text
-JellyfinRandomMovieScreensaver.xcodeproj
-JellyfinRandomMovieScreensaver/
+Makefile
+Resources/
 ├─ Info.plist
+Sources/
 ├─ JellyfinRandomMovieScreensaverView.swift
 ├─ ScreensaverSettings.swift
 ├─ SettingsWindowController.swift
@@ -44,17 +45,18 @@ JellyfinRandomMovieScreensaver/
 └─ VideoPlaybackController.swift
 ```
 
-This can be collapsed further during implementation if Xcode target setup is easier with fewer files. The important separation is between screensaver lifecycle, settings persistence, Jellyfin networking, and video playback.
+The important separation is between screensaver lifecycle, settings persistence, Jellyfin networking, and video playback.
 
 ## Build System
 
-Use Xcode project scaffolding for the `.saver` bundle.
+The implementation starts with a CLI-buildable `Makefile` that assembles a native `.saver` bundle with `swiftc`.
 
 Reasons:
 
-- Xcode understands bundle targets, signing, `Info.plist`, and framework linking.
-- A `.saver` is a native plugin bundle, not a command-line Swift package product.
-- Manual `swiftc` bundle assembly is possible but would add unnecessary build complexity.
+- Supports a Neovim-first workflow immediately.
+- Avoids requiring full Xcode project scaffolding before the first working bundle.
+- Still produces a native `.saver` bundle using the planned Swift/AppKit/ScreenSaver architecture.
+- Can be replaced by or supplemented with an Xcode project later.
 
 Expected frameworks:
 
@@ -97,6 +99,8 @@ userID: String
 mediaType: MediaType
 muted: Bool
 ```
+
+The `userID` value is the ID from Jellyfin API paths like `/Users/{userID}/Items`. It is not the media item ID from `/Users/{userID}/Items/{mediaID}`.
 
 Initial media type enum:
 
