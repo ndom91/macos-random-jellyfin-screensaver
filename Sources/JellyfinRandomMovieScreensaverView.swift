@@ -11,6 +11,7 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
     private var playbackTask: Task<Void, Never>?
     private var playbackRequestID: UUID?
     private let statusLabel = NSTextField(labelWithString: "")
+    private var windowWillCloseObserver: NSObjectProtocol?
 
     override init?(frame: NSRect, isPreview: Bool) {
         super.init(frame: frame, isPreview: isPreview)
@@ -20,6 +21,15 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         initializeView()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        DistributedNotificationCenter.default().removeObserver(self)
+
+        if let windowWillCloseObserver {
+            NotificationCenter.default.removeObserver(windowWillCloseObserver)
+        }
     }
 
     override var hasConfigureSheet: Bool {
@@ -47,9 +57,42 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
 
+        if let windowWillCloseObserver {
+            NotificationCenter.default.removeObserver(windowWillCloseObserver)
+            self.windowWillCloseObserver = nil
+        }
+
+        if let window {
+            windowWillCloseObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.stopPlayback()
+                }
+            }
+        }
+
         if window == nil {
             stopPlayback()
         }
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        if newWindow == nil {
+            stopPlayback()
+        }
+
+        super.viewWillMove(toWindow: newWindow)
+    }
+
+    override func viewWillMove(toSuperview newSuperview: NSView?) {
+        if newSuperview == nil {
+            stopPlayback()
+        }
+
+        super.viewWillMove(toSuperview: newSuperview)
     }
 
     override func layout() {
@@ -64,6 +107,7 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
         animationTimeInterval = 1.0 / 30.0
         playbackController = VideoPlaybackController(hostView: self)
         configureStatusLabel()
+        registerLifecycleObservers()
         showStatus("Jellyfin screensaver loaded")
     }
 
@@ -125,10 +169,44 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
     }
 
     private func stopPlayback() {
+        NSLog("JellyfinRandomMovieScreensaver: stopping playback")
         playbackRequestID = nil
         playbackTask?.cancel()
         playbackTask = nil
         playbackController?.stop()
+    }
+
+    private func registerLifecycleObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applicationWillTerminate),
+            name: NSApplication.willTerminateNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applicationDidResignActive),
+            name: NSApplication.didResignActiveNotification,
+            object: nil
+        )
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(screenIsUnlocked),
+            name: Notification.Name("com.apple.screenIsUnlocked"),
+            object: nil
+        )
+    }
+
+    @objc private func applicationWillTerminate() {
+        stopPlayback()
+    }
+
+    @objc private func applicationDidResignActive() {
+        stopPlayback()
+    }
+
+    @objc private func screenIsUnlocked() {
+        stopPlayback()
     }
 
     private func configureStatusLabel() {
