@@ -32,6 +32,7 @@ struct ScreensaverSettings {
     var userID: String
     var mediaType: MediaType
     var muted: Bool
+    var subtitlesEnabled: Bool
 
     var hasRequiredPlaybackSettings: Bool {
         !baseURL.isEmpty && !apiKey.isEmpty && !userID.isEmpty
@@ -48,6 +49,7 @@ struct ScreensaverSettings {
             Keys.userID: "",
             Keys.mediaType: MediaType.movies.rawValue,
             Keys.muted: true,
+            Keys.subtitlesEnabled: true,
         ])
 
         return defaults
@@ -62,7 +64,8 @@ struct ScreensaverSettings {
             apiKey: defaults.string(forKey: Keys.apiKey) ?? "",
             userID: defaults.string(forKey: Keys.userID) ?? "",
             mediaType: MediaType(rawValue: mediaTypeValue) ?? .movies,
-            muted: defaults.object(forKey: Keys.muted) as? Bool ?? true
+            muted: defaults.object(forKey: Keys.muted) as? Bool ?? true,
+            subtitlesEnabled: defaults.object(forKey: Keys.subtitlesEnabled) as? Bool ?? true
         )
     }
 
@@ -73,6 +76,7 @@ struct ScreensaverSettings {
         defaults.set(userID.trimmingCharacters(in: .whitespacesAndNewlines), forKey: Keys.userID)
         defaults.set(mediaType.rawValue, forKey: Keys.mediaType)
         defaults.set(muted, forKey: Keys.muted)
+        defaults.set(subtitlesEnabled, forKey: Keys.subtitlesEnabled)
         defaults.synchronize()
     }
 
@@ -110,5 +114,6 @@ struct ScreensaverSettings {
         static let userID = "userID"
         static let mediaType = "mediaType"
         static let muted = "muted"
+        static let subtitlesEnabled = "subtitlesEnabled"
     }
 }

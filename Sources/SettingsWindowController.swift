@@ -6,10 +6,11 @@ final class SettingsWindowController: NSWindowController {
     private let userIDField = NSTextField()
     private let mediaTypeButton = NSPopUpButton()
     private let mutedCheckbox = NSButton(checkboxWithTitle: "Play muted", target: nil, action: nil)
+    private let subtitlesCheckbox = NSButton(checkboxWithTitle: "Enable subtitles", target: nil, action: nil)
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 270),
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 300),
             styleMask: [.titled],
             backing: .buffered,
             defer: false
@@ -60,6 +61,9 @@ final class SettingsWindowController: NSWindowController {
         mutedCheckbox.target = self
         stackView.addArrangedSubview(mutedCheckbox)
 
+        subtitlesCheckbox.target = self
+        stackView.addArrangedSubview(subtitlesCheckbox)
+
         let buttonRow = NSStackView()
         buttonRow.orientation = .horizontal
         buttonRow.alignment = .centerY
@@ -104,6 +108,7 @@ final class SettingsWindowController: NSWindowController {
         apiKeyField.stringValue = settings.apiKey
         userIDField.stringValue = settings.userID
         mutedCheckbox.state = settings.muted ? .on : .off
+        subtitlesCheckbox.state = settings.subtitlesEnabled ? .on : .off
 
         let index = MediaType.allCases.firstIndex(of: settings.mediaType) ?? 0
         mediaTypeButton.selectItem(at: index)
@@ -116,7 +121,8 @@ final class SettingsWindowController: NSWindowController {
             apiKey: apiKeyField.stringValue,
             userID: userIDField.stringValue,
             mediaType: selectedMediaType,
-            muted: mutedCheckbox.state == .on
+            muted: mutedCheckbox.state == .on,
+            subtitlesEnabled: subtitlesCheckbox.state == .on
         ).save()
 
         closeSheet()

@@ -4,12 +4,14 @@ import AVFoundation
 @MainActor
 final class VideoPlaybackController {
     private let playerView: NSView
+    private let subtitleLabel = NSTextField(labelWithString: "")
     private var player: AVPlayer?
     private var playerItem: AVPlayerItem?
     private var playerLayer: AVPlayerLayer?
     private var observations: [NSKeyValueObservation] = []
     private var statusHandler: ((String) -> Void)?
     private var diagnosticsTask: Task<Void, Never>?
+    private var timeObserver: Any?
 
     init(hostView: NSView) {
         playerView = NSView(frame: hostView.bounds)
@@ -17,9 +19,25 @@ final class VideoPlaybackController {
         playerView.layer?.backgroundColor = NSColor.black.cgColor
         playerView.autoresizingMask = [.width, .height]
         hostView.addSubview(playerView, positioned: .below, relativeTo: nil)
+
+        subtitleLabel.textColor = .white
+        subtitleLabel.font = NSFont.systemFont(ofSize: 34, weight: .semibold)
+        subtitleLabel.alignment = .center
+        subtitleLabel.lineBreakMode = .byWordWrapping
+        subtitleLabel.maximumNumberOfLines = 3
+        subtitleLabel.backgroundColor = .clear
+        subtitleLabel.wantsLayer = true
+        subtitleLabel.layer?.shadowColor = NSColor.black.cgColor
+        subtitleLabel.layer?.shadowOpacity = 0.9
+        subtitleLabel.layer?.shadowRadius = 5
+        subtitleLabel.layer?.shadowOffset = CGSize(width: 0, height: -1)
+        subtitleLabel.isHidden = true
+        subtitleLabel.autoresizingMask = [.width, .minYMargin]
+        hostView.addSubview(subtitleLabel)
+        layoutSubtitleLabel(hostBounds: hostView.bounds)
     }
 
-    func play(url: URL, muted: Bool, startTime: TimeInterval = 0, statusHandler: ((String) -> Void)? = nil) {
+    func play(url: URL, muted: Bool, subtitlesEnabled: Bool, subtitleCues: [SubtitleCue] = [], startTime: TimeInterval = 0, statusHandler: ((String) -> Void)? = nil) {
         stop()
         self.statusHandler = statusHandler
 
@@ -37,8 +55,11 @@ final class VideoPlaybackController {
         self.player = player
         self.playerItem = playerItem
         self.playerLayer = playerLayer
-        observe(player: player, item: playerItem)
+        observe(player: player, item: playerItem, subtitlesEnabled: subtitlesEnabled)
         startDiagnostics(player: player, item: playerItem)
+        if subtitlesEnabled && !subtitleCues.isEmpty {
+            startSubtitleRendering(player: player, cues: subtitleCues)
+        }
 
         let startPlayback = { [weak player, statusHandler] in
             player?.playImmediately(atRate: 1.0)
@@ -59,6 +80,7 @@ final class VideoPlaybackController {
 
     func layout() {
         playerLayer?.frame = playerView.bounds
+        layoutSubtitleLabel(hostBounds: playerView.superview?.bounds ?? playerView.bounds)
     }
 
     func stop() {
@@ -66,6 +88,10 @@ final class VideoPlaybackController {
         diagnosticsTask = nil
         statusHandler = nil
         observations.removeAll()
+        if let timeObserver {
+            player?.removeTimeObserver(timeObserver)
+            self.timeObserver = nil
+        }
         player?.rate = 0
         player?.pause()
         player?.replaceCurrentItem(with: nil)
@@ -73,13 +99,48 @@ final class VideoPlaybackController {
         playerItem = nil
         playerLayer?.removeFromSuperlayer()
         playerLayer = nil
+        subtitleLabel.stringValue = ""
+        subtitleLabel.isHidden = true
     }
 
-    private func observe(player: AVPlayer, item: AVPlayerItem) {
+    private func layoutSubtitleLabel(hostBounds: NSRect) {
+        let horizontalPadding: CGFloat = 120
+        subtitleLabel.frame = NSRect(
+            x: horizontalPadding,
+            y: 96,
+            width: max(0, hostBounds.width - (horizontalPadding * 2)),
+            height: 130
+        )
+    }
+
+    private func startSubtitleRendering(player: AVPlayer, cues: [SubtitleCue]) {
+        let interval = CMTime(seconds: 0.2, preferredTimescale: 600)
+        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            guard let self else {
+                return
+            }
+
+            let seconds = CMTimeGetSeconds(time)
+            guard seconds.isFinite,
+                  let cue = cues.first(where: { $0.start <= seconds && seconds <= $0.end }) else {
+                self.subtitleLabel.stringValue = ""
+                self.subtitleLabel.isHidden = true
+                return
+            }
+
+            self.subtitleLabel.stringValue = cue.text
+            self.subtitleLabel.isHidden = false
+        }
+    }
+
+    private func observe(player: AVPlayer, item: AVPlayerItem, subtitlesEnabled: Bool) {
         observations.append(item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
             Task { @MainActor in
                 switch item.status {
                 case .readyToPlay:
+                    if subtitlesEnabled {
+                        await self?.enableSubtitles(for: item)
+                    }
                     self?.statusHandler?("Video ready to play")
                 case .failed:
                     self?.statusHandler?("Video item failed: \(item.error?.localizedDescription ?? "unknown error")")
@@ -105,6 +166,23 @@ final class VideoPlaybackController {
                 }
             }
         })
+    }
+
+    private func enableSubtitles(for item: AVPlayerItem) async {
+        guard let group = try? await item.asset.loadMediaSelectionGroup(for: .legible) else {
+            statusHandler?("No subtitle track exposed by stream")
+            return
+        }
+
+        let preferredOption = AVMediaSelectionGroup.mediaSelectionOptions(from: group.options, with: Locale.current).first
+        let nonForcedOption = group.options.first { !$0.hasMediaCharacteristic(.containsOnlyForcedSubtitles) }
+        guard let option = preferredOption ?? nonForcedOption ?? group.options.first else {
+            statusHandler?("No selectable subtitle track exposed by stream")
+            return
+        }
+
+        item.select(option, in: group)
+        statusHandler?("Subtitles enabled")
     }
 
     private func startDiagnostics(player: AVPlayer, item: AVPlayerItem) {

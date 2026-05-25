@@ -10,6 +10,7 @@ It fetches random unwatched items from your Jellyfin server, skips the first two
 - Plays random unwatched Jellyfin media.
 - Supports movies and TV episodes.
 - Muted by default, with an option to enable audio.
+- Subtitles enabled by default when the Jellyfin stream exposes compatible subtitle tracks.
 - Starts playback at the 2-minute mark.
 
 ## Install
@@ -30,6 +31,7 @@ Settings:
 - **Jellyfin User ID**: the ID from Jellyfin API paths like `/Users/{userId}/Items`; this is not a media item ID.
 - **Media Type**: movies or TV episodes.
 - **Play muted**: enabled by default.
+- **Enable subtitles**: enabled by default; depends on subtitles being exposed by the Jellyfin playback stream.
 
 ## Build And Install
 

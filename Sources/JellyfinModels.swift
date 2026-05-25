@@ -14,6 +14,7 @@ struct JellyfinItem: Decodable {
     let container: String?
     let type: String?
     let mediaType: String?
+    let mediaStreams: [JellyfinMediaStream]?
     let userData: JellyfinUserData?
 
     enum CodingKeys: String, CodingKey {
@@ -22,6 +23,7 @@ struct JellyfinItem: Decodable {
         case container = "Container"
         case type = "Type"
         case mediaType = "MediaType"
+        case mediaStreams = "MediaStreams"
         case userData = "UserData"
     }
 
@@ -35,6 +37,51 @@ struct JellyfinItem: Decodable {
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
             .contains { compatibleContainers.contains($0) }
+    }
+
+    var subtitleTrackDebugName: String? {
+        mediaStreams?
+            .first(where: { $0.type == "Subtitle" })?
+            .debugName
+    }
+}
+
+struct JellyfinMediaStream: Decodable {
+    let index: Int?
+    let type: String?
+    let title: String?
+    let displayTitle: String?
+    let language: String?
+    let codec: String?
+    let path: String?
+
+    enum CodingKeys: String, CodingKey {
+        case index = "Index"
+        case type = "Type"
+        case title = "Title"
+        case displayTitle = "DisplayTitle"
+        case language = "Language"
+        case codec = "Codec"
+        case path = "Path"
+    }
+
+    var debugName: String {
+        if let path, let fileName = path.split(separator: "/").last {
+            return String(fileName)
+        }
+
+        if let displayTitle, !displayTitle.isEmpty {
+            return displayTitle
+        }
+
+        if let title, !title.isEmpty {
+            return title
+        }
+
+        return [language, codec]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
     }
 }
 

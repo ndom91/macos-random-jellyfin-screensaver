@@ -146,6 +146,14 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                     return
                 }
 
+                let subtitleCues: [SubtitleCue]
+                if settings.subtitlesEnabled {
+                    subtitleCues = (try? await jellyfinClient.fetchSubtitleCues(item: item, settings: settings)) ?? []
+                    NSLog("JellyfinRandomMovieScreensaver: loaded \(subtitleCues.count) subtitle cues")
+                } else {
+                    subtitleCues = []
+                }
+
                 await MainActor.run { [weak self] in
                     guard self?.playbackRequestID == requestID else {
                         return
@@ -156,7 +164,7 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                     NSLog("JellyfinRandomMovieScreensaver: starting \(itemName)")
                     NSLog("JellyfinRandomMovieScreensaver: selected item container: \(item.container ?? "unknown")")
                     NSLog("JellyfinRandomMovieScreensaver: playback URL: \(playbackURL.absoluteString)")
-                    self?.playbackController?.play(url: playbackURL, muted: settings.muted, startTime: 120) { [weak self] status in
+                    self?.playbackController?.play(url: playbackURL, muted: settings.muted, subtitlesEnabled: settings.subtitlesEnabled, subtitleCues: subtitleCues, startTime: 120) { [weak self] status in
                         self?.handlePlaybackStatus(status, itemName: itemName)
                     }
                 }
@@ -277,6 +285,10 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
         let normalizedStatus = status.lowercased()
 
         if normalizedStatus == "player playing" || normalizedStatus == "video ready to play" {
+            return
+        }
+
+        if normalizedStatus == "subtitles enabled" || normalizedStatus == "no subtitle track exposed by stream" || normalizedStatus == "no selectable subtitle track exposed by stream" {
             return
         }
 

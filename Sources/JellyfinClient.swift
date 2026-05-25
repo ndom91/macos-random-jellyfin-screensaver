@@ -37,6 +37,41 @@ final class JellyfinClient {
         }
     }
 
+    func fetchSubtitleCues(item: JellyfinItem, settings: ScreensaverSettings) async throws -> [SubtitleCue] {
+        guard let subtitleStream = item.mediaStreams?.first(where: { $0.type == "Subtitle" }),
+              let subtitleIndex = subtitleStream.index else {
+            return []
+        }
+
+        guard var components = URLComponents(string: settings.baseURL) else {
+            throw JellyfinClientError.invalidURL
+        }
+
+        let basePath = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let endpointPath = "Videos/\(item.id)/\(item.id)/Subtitles/\(subtitleIndex)/Stream.srt"
+        components.path = "/" + [basePath, endpointPath]
+            .filter { !$0.isEmpty }
+            .joined(separator: "/")
+        components.queryItems = [URLQueryItem(name: "api_key", value: settings.apiKey)]
+
+        guard let url = components.url else {
+            throw JellyfinClientError.invalidURL
+        }
+
+        let (data, response) = try await session.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw JellyfinClientError.invalidResponse
+        }
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            throw JellyfinClientError.httpStatus(httpResponse.statusCode, url)
+        }
+        guard let content = String(data: data, encoding: .utf8) else {
+            return []
+        }
+
+        return SubtitleParser.parseSRT(content)
+    }
+
     private func randomItemsURL(settings: ScreensaverSettings) throws -> URL {
         guard var components = URLComponents(string: settings.baseURL) else {
             throw JellyfinClientError.invalidURL
@@ -53,7 +88,7 @@ final class JellyfinClient {
             URLQueryItem(name: "Recursive", value: "true"),
             URLQueryItem(name: "SortBy", value: "Random"),
             URLQueryItem(name: "Limit", value: "100"),
-            URLQueryItem(name: "Fields", value: "ExternalUrls,MediaSources"),
+            URLQueryItem(name: "Fields", value: "ExternalUrls,MediaSources,MediaStreams"),
         ]
 
         guard let url = components.url else {
