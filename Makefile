@@ -8,7 +8,7 @@ RESOURCES_DIR := $(CONTENTS_DIR)/Resources
 SOURCES := $(wildcard Sources/*.swift)
 INSTALL_DIR := $(HOME)/Library/Screen Savers
 
-.PHONY: build install clean print-bundle
+.PHONY: build install clean print-bundle dev-install
 
 build: $(MACOS_DIR)/$(PRODUCT_NAME)
 
@@ -30,6 +30,9 @@ install: build
 	mkdir -p "$(INSTALL_DIR)"
 	rm -rf "$(INSTALL_DIR)/$(PRODUCT_NAME).saver"
 	cp -R "$(BUNDLE_DIR)" "$(INSTALL_DIR)/"
+
+dev-install: clean build install
+	@printf '%s\n' "Ensure your screensaver is selected in the System Settings, and then run 'open -a ScreenSaverEngine' to test"
 
 print-bundle:
 	@printf '%s\n' "$(BUNDLE_DIR)"
