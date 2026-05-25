@@ -61,9 +61,12 @@ Other useful commands:
 
 ```sh
 make build
+make dev-install
 make print-bundle
 make clean
 ```
+
+`make dev-install` runs a clean build, installs the screensaver, and prints the command for launching the current screensaver manually.
 
 The build ad-hoc signs the local `.saver` bundle with `codesign --sign -`. This is required on modern macOS so the system screensaver host can load the bundle locally.
 

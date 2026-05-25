@@ -83,7 +83,7 @@ Known random-items endpoint:
 Example full URL:
 
 ```text
-https://watch.puff.ndo.dev/Users/93d8622aa94048c59454ae6c12ce54b9/Items?IncludeItemTypes=Movie&Recursive=true&SortBy=Random&Limit=100&Fields=ExternalUrls
+https://watch.example.com/Users/{userId}/Items?IncludeItemTypes=Movie&Recursive=true&SortBy=Random&Limit=100&Fields=ExternalUrls
 ```
 
 The response contains an `Items` array. Each item includes fields such as:

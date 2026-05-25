@@ -1,8 +1,9 @@
 # MacOS Screensaver - Random Jellyfin media
 
-This is a MacOS screensaver application that will pick a random unwatched movie
-from your Jellyfin library and play it (on mute by default) when the screensaver
-is triggered.
+This is a macOS screensaver application that picks a random unwatched Jellyfin
+movie or TV episode and plays it when the screensaver is triggered. Playback is
+muted by default, starts at the 2-minute mark, and briefly shows the selected
+title in the lower-left corner.
 
 ## Documentation
 
@@ -24,6 +25,12 @@ make install
 open -a ScreenSaverEngine
 ```
 
+For a clean rebuild/install cycle, use:
+
+```sh
+make dev-install
+```
+
 Source layout:
 
 ```text
@@ -43,6 +50,13 @@ The implementation uses:
 - `AppKit` for the configuration sheet and title overlay.
 - `URLSession` for Jellyfin API requests.
 - `AVFoundation` / `AVPlayerLayer` for playback.
+
+Playback implementation notes:
+
+- The screensaver prefers AVPlayer-compatible Jellyfin items (`mp4`, `mov`, `m4a`, `m4v`).
+- Playback URL priority starts with Jellyfin's `/Videos/{itemId}/stream.mp4` endpoint.
+- The app intentionally does not call Jellyfin playback progress/session APIs, so it should not mark items as played or add Continue Watching entries.
+- Normal buffering/ready/playing status is logged only. On-screen status should be reserved for the title overlay and actionable errors.
 
 ## Troubleshooting
 
