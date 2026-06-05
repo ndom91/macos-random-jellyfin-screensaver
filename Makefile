@@ -31,7 +31,9 @@ install: build
 	rm -rf "$(INSTALL_DIR)/$(PRODUCT_NAME).saver"
 	cp -R "$(BUNDLE_DIR)" "$(INSTALL_DIR)/"
 
-dev-install: clean build install
+dev-install: clean build
+	-killall legacyScreenSaver ScreenSaverEngine 2>/dev/null
+	$(MAKE) install
 	@printf '%s\n' "Ensure your screensaver is selected in the System Settings, and then run 'open -a ScreenSaverEngine' to test"
 
 print-bundle:
