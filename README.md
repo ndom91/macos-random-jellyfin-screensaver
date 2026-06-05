@@ -11,20 +11,18 @@ It fetches random unwatched items from your Jellyfin server, starts playback at 
 - Supports movies and TV episodes.
 - Muted by default, with an option to enable audio.
 - Subtitles enabled by default when the Jellyfin stream exposes compatible subtitle tracks.
-- Starts playback at a random point in the first 2-30% of the runtime (falls back to the 2-minute mark when the runtime is unknown).
+- Starts playback at a random point in the first 2-30% of the runtime.
 
 ## Install
 
 1. Download the latest `.zip` from GitHub Releases.
 2. Unzip it.
 3. Copy `JellyfinRandomMovieScreensaver.saver` to `~/Library/Screen Savers/`.
-4. Open macOS Screen Saver Settings, select **Jellyfin Random Media Screensaver**, and fill in **Options...**.
+4. Open macOS Screen Saver Settings, select **Jellyfin Random Media Screensaver**, and fill in the settings under **Options**.
 
 ## Configuration
 
-After installing, open macOS Screen Saver Settings, select **Jellyfin Random Media Screensaver**, and open **Options...**.
-
-Settings:
+After installing, open macOS Screen Saver Settings, select **Jellyfin Random Media Screensaver**, and open **Options**.
 
 - **Jellyfin Base URL**: your Jellyfin server URL, for example `https://watch.example.com`.
 - **Jellyfin API Key**: a Jellyfin API key.
@@ -33,7 +31,7 @@ Settings:
 - **Play muted**: enabled by default.
 - **Enable subtitles**: enabled by default; depends on subtitles being exposed by the Jellyfin playback stream.
 
-![](.github/screenshot_001.png)
+> ![](.github/screenshot_001.png)
 
 ## Build And Install
 
