@@ -154,6 +154,13 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                     subtitleCues = []
                 }
 
+                let startTime: TimeInterval
+                if let duration = item.runTimeSeconds, duration > 0 {
+                    startTime = TimeInterval.random(in: (duration * 0.02)...(duration * 0.3))
+                } else {
+                    startTime = 120
+                }
+
                 await MainActor.run { [weak self] in
                     guard self?.playbackRequestID == requestID else {
                         return
@@ -164,7 +171,8 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                     NSLog("JellyfinRandomMovieScreensaver: starting \(itemName)")
                     NSLog("JellyfinRandomMovieScreensaver: selected item container: \(item.container ?? "unknown")")
                     NSLog("JellyfinRandomMovieScreensaver: playback URL: \(playbackURL.absoluteString)")
-                    self?.playbackController?.play(url: playbackURL, muted: settings.muted, subtitlesEnabled: settings.subtitlesEnabled, subtitleCues: subtitleCues, startTime: 120) { [weak self] status in
+                    NSLog("JellyfinRandomMovieScreensaver: start time \(Int(startTime))s of \(Int(item.runTimeSeconds ?? 0))s runtime")
+                    self?.playbackController?.play(url: playbackURL, muted: settings.muted, subtitlesEnabled: settings.subtitlesEnabled, subtitleCues: subtitleCues, startTime: startTime) { [weak self] status in
                         self?.handlePlaybackStatus(status, itemName: itemName)
                     }
                 }

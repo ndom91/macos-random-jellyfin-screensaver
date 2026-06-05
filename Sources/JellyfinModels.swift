@@ -16,6 +16,7 @@ struct JellyfinItem: Decodable {
     let mediaType: String?
     let mediaStreams: [JellyfinMediaStream]?
     let userData: JellyfinUserData?
+    let runTimeTicks: Int64?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -25,6 +26,11 @@ struct JellyfinItem: Decodable {
         case mediaType = "MediaType"
         case mediaStreams = "MediaStreams"
         case userData = "UserData"
+        case runTimeTicks = "RunTimeTicks"
+    }
+
+    var runTimeSeconds: TimeInterval? {
+        runTimeTicks.map { TimeInterval($0) / 10_000_000 }
     }
 
     var isLikelyAVPlayerCompatible: Bool {

@@ -88,7 +88,7 @@ final class JellyfinClient {
             URLQueryItem(name: "Recursive", value: "true"),
             URLQueryItem(name: "SortBy", value: "Random"),
             URLQueryItem(name: "Limit", value: "100"),
-            URLQueryItem(name: "Fields", value: "ExternalUrls,MediaSources,MediaStreams"),
+            URLQueryItem(name: "Fields", value: "ExternalUrls,MediaSources,MediaStreams,RunTimeTicks"),
         ]
 
         guard let url = components.url else {

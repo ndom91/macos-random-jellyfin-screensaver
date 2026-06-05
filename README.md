@@ -2,7 +2,7 @@
 
 A native macOS screensaver that plays a random unwatched Jellyfin movie or TV episode.
 
-It fetches random unwatched items from your Jellyfin server, skips the first two minutes to avoid studio intros, briefly shows the selected title, and plays the video inside the macOS screensaver.
+It fetches random unwatched items from your Jellyfin server, starts playback at a random point in the first 2-30% of the runtime, briefly shows the selected title, and plays the video inside the macOS screensaver.
 
 ## Features
 
@@ -11,7 +11,7 @@ It fetches random unwatched items from your Jellyfin server, skips the first two
 - Supports movies and TV episodes.
 - Muted by default, with an option to enable audio.
 - Subtitles enabled by default when the Jellyfin stream exposes compatible subtitle tracks.
-- Starts playback at the 2-minute mark.
+- Starts playback at a random point in the first 2-30% of the runtime (falls back to the 2-minute mark when the runtime is unknown).
 
 ## Install
 

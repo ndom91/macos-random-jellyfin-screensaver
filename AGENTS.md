@@ -2,8 +2,9 @@
 
 This is a macOS screensaver application that picks a random unwatched Jellyfin
 movie or TV episode and plays it when the screensaver is triggered. Playback is
-muted by default, starts at the 2-minute mark, and briefly shows the selected
-title in the lower-left corner.
+muted by default, starts at a random point in the first 2-30% of the runtime
+(falling back to the 2-minute mark when the runtime is unknown), and briefly
+shows the selected title in the lower-left corner.
 
 ## Documentation
 
