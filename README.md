@@ -33,6 +33,8 @@ Settings:
 - **Play muted**: enabled by default.
 - **Enable subtitles**: enabled by default; depends on subtitles being exposed by the Jellyfin playback stream.
 
+![](.github/screenshot_001.png)
+
 ## Build And Install
 
 Prebuilt `.saver` bundles are available from GitHub Releases. Download the latest `.zip`, unzip it, and install `JellyfinRandomMovieScreensaver.saver` into:
