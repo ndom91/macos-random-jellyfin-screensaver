@@ -38,12 +38,6 @@ struct JellyfinItem: Decodable {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
             .contains { compatibleContainers.contains($0) }
     }
-
-    var subtitleTrackDebugName: String? {
-        mediaStreams?
-            .first(where: { $0.type == "Subtitle" })?
-            .debugName
-    }
 }
 
 struct JellyfinMediaStream: Decodable {
@@ -65,24 +59,6 @@ struct JellyfinMediaStream: Decodable {
         case path = "Path"
     }
 
-    var debugName: String {
-        if let path, let fileName = path.split(separator: "/").last {
-            return String(fileName)
-        }
-
-        if let displayTitle, !displayTitle.isEmpty {
-            return displayTitle
-        }
-
-        if let title, !title.isEmpty {
-            return title
-        }
-
-        return [language, codec]
-            .compactMap { $0 }
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-    }
 }
 
 struct JellyfinUserData: Decodable {

@@ -132,7 +132,7 @@ final class JellyfinRandomMovieScreensaverView: ScreenSaverView {
                 try Task.checkCancellation()
 
                 let unwatchedItems = items.filter { $0.userData?.played == false }
-                guard let item = unwatchedItems.first(where: { $0.isLikelyAVPlayerCompatible }) ?? unwatchedItems.first else {
+                guard let item = unwatchedItems.first else {
                     await MainActor.run { [weak self] in
                         self?.logAndShowStatus("No unwatched Jellyfin items found.")
                     }
