@@ -53,8 +53,8 @@ The implementation uses:
 
 Playback implementation notes:
 
-- The screensaver prefers AVPlayer-compatible Jellyfin items (`mp4`, `mov`, `m4a`, `m4v`).
-- Playback URL priority starts with Jellyfin's `/Videos/{itemId}/stream.mp4` endpoint.
+- Playback URL priority starts with Jellyfin's `/Videos/{itemId}/master.m3u8` endpoint using H.264/AAC transcode parameters for broader AVPlayer compatibility.
+- Direct MP4/static stream URLs remain fallbacks.
 - The app intentionally does not call Jellyfin playback progress/session APIs, so it should not mark items as played or add Continue Watching entries.
 - Normal buffering/ready/playing status is logged only. On-screen status should be reserved for the title overlay and actionable errors.
 
@@ -71,7 +71,7 @@ Common issues:
 - **Missing settings**: fill in base URL, API key, and user ID in Options.
 - **404 from Jellyfin**: the user ID may be wrong. Use the ID from `/Users/{userId}/Items`.
 - **AMFI or Gatekeeper errors**: rebuild and reinstall so the bundle is ad-hoc signed.
-- **Unsupported media**: AVPlayer works best with MP4/MOV-compatible media. The screensaver prefers compatible items and requests Jellyfin's MP4 stream endpoint.
+- **Unsupported media**: the screensaver prefers Jellyfin's HLS endpoint with H.264/AAC transcode parameters, then falls back to direct MP4/static stream URLs.
 
 Modern macOS may show Wallpaper settings labels while custom `.saver` modules are launched through the legacy screensaver host. If logs mention `Setting module “JellyfinRandomMovieScreensaver”`, the custom module is being loaded.
 
