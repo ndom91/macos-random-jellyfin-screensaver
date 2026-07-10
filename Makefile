@@ -16,9 +16,9 @@ $(MACOS_DIR)/$(PRODUCT_NAME): $(SOURCES) Resources/Info.plist
 	mkdir -p "$(MACOS_DIR)" "$(RESOURCES_DIR)"
 	cp Resources/Info.plist "$(CONTENTS_DIR)/Info.plist"
 	swiftc \
-		-emit-library \
 		-module-name $(PRODUCT_NAME) \
 		-o "$(MACOS_DIR)/$(PRODUCT_NAME)" \
+		-Xlinker -bundle \
 		-framework ScreenSaver \
 		-framework AppKit \
 		-framework AVFoundation \
